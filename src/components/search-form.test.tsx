@@ -58,4 +58,15 @@ describe("SearchForm", () => {
 
     expect(push).not.toHaveBeenCalled();
   });
+
+  it("returns to home when an active query is cleared", async () => {
+    const user = userEvent.setup();
+    push.mockClear();
+
+    render(<SearchForm defaultQuery="next.js" defaultSort="best-match" />);
+
+    await user.clear(screen.getByLabelText("Search query"));
+
+    expect(push).toHaveBeenCalledWith("/");
+  });
 });
