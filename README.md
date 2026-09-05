@@ -19,7 +19,7 @@ GitHub の公開リポジトリをキーワード検索し、一覧と詳細を�
 | R2 | `search/repositories` で一覧 | Server Component から直接呼び出し |
 | R3 | 詳細に7項目 | 名前 / オーナーアイコン / 言語 / Star / Watcher / Fork / Issue |
 | R4 | 詳細はページ | `/repositories/[owner]/[repo]` |
-| R5 | テスト | Vitest 9 件、Playwright 2 件 |
+| R5 | テスト | Vitest 15 件、Playwright 2 件 |
 
 ## 起動方法
 
@@ -91,12 +91,15 @@ Issue 数だけ Search API をもう1本呼びます。レート制限は詳細 
 | `search-form.tsx` | `router.push` で URL を組み立てる |
 | `retry-button.tsx` | `router.refresh()` |
 | 各 `error.tsx` | Next.js の error boundary は Client 必須 |
+| `back-to-search-link.tsx` | `useSearchParams` で `from` を読む |
 
 `pagination.tsx` は `<Link>` だけなので Server のままです。`GITHUB_TOKEN` に `NEXT_PUBLIC_` は付けません。検索状態は URL にあるので、`app/api/**` は挟んでいません。
 
 ### 検索状態は URL
 
 検索条件は URL に持ち、`useState` は使いません。既定の `page=1` と `sort=best-match` はクエリに出さないので、1ページ目なら `/?q=next.js` だけになります。
+
+詳細へ行くときは `?from=` に一覧のパスを載せる。戻ると同じ検索結果に戻る。ソートは変更した時点で URL を更新し、ページは 1 に戻す。検索語を空にすると初期画面（`/`）に戻る。
 
 ### エラー分類
 
