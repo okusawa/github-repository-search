@@ -5,9 +5,10 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { FormattedStat, Stat } from "@/components/stat";
+import { ErrorMessage } from "@/components/error-message";
 import { IssueCount } from "@/components/issue-count";
 import { getRepository } from "@/lib/github/get-repository";
-import { isNotFoundError } from "@/lib/github/errors";
+import { isGitHubApiError, isNotFoundError } from "@/lib/github/errors";
 
 type RepositoryPageProps = {
   params: Promise<{ owner: string; repo: string }>;
@@ -17,37 +18,44 @@ export async function generateMetadata({
   params,
 }: RepositoryPageProps): Promise<Metadata> {
   const { owner, repo } = await params;
+  const outcome = await getRepository(owner, repo);
 
-  try {
-    const repository = await getRepository(owner, repo);
-
-    return {
-      title: `${repository.full_name} | GitHub Repository Search`,
-      description: repository.description ?? undefined,
-    };
-  } catch (error) {
-    if (isNotFoundError(error)) {
+  if (isGitHubApiError(outcome)) {
+    if (isNotFoundError(outcome)) {
       return { title: "Repository not found" };
     }
 
     return { title: `${owner}/${repo} | GitHub Repository Search` };
   }
+
+  return {
+    title: `${outcome.full_name} | GitHub Repository Search`,
+    description: outcome.description ?? undefined,
+  };
 }
 
 export default async function RepositoryPage({ params }: RepositoryPageProps) {
   const { owner, repo } = await params;
+  const outcome = await getRepository(owner, repo);
 
-  let repository;
-
-  try {
-    repository = await getRepository(owner, repo);
-  } catch (error) {
-    if (isNotFoundError(error)) {
+  if (isGitHubApiError(outcome)) {
+    if (isNotFoundError(outcome)) {
       notFound();
     }
 
-    throw error;
+    return (
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-10">
+        <nav aria-label="Breadcrumb">
+          <Link href="/" className="text-sm text-zinc-600 hover:text-zinc-900">
+            ← Back to search
+          </Link>
+        </nav>
+        <ErrorMessage error={outcome} />
+      </div>
+    );
   }
+
+  const repository = outcome;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-10">

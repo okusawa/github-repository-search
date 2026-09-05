@@ -1,9 +1,13 @@
 import { cacheLife } from "next/cache";
 
-import { githubFetch } from "@/lib/github/client";
+import { githubFetchSafe } from "@/lib/github/client";
+import { isGitHubApiError } from "@/lib/github/errors";
 import { searchIssuesResponseSchema } from "@/lib/github/schema";
 
-export async function getOpenIssueCount(owner: string, repo: string) {
+export async function getOpenIssueCount(
+  owner: string,
+  repo: string,
+): Promise<number | null> {
   "use cache";
   cacheLife("minutes");
 
@@ -12,7 +16,12 @@ export async function getOpenIssueCount(owner: string, repo: string) {
     per_page: "1",
   });
 
-  const response = await githubFetch(`/search/issues?${params.toString()}`);
+  const response = await githubFetchSafe(`/search/issues?${params.toString()}`);
+
+  if (isGitHubApiError(response)) {
+    return null;
+  }
+
   const data: unknown = await response.json();
 
   return searchIssuesResponseSchema.parse(data).total_count;
