@@ -6,7 +6,7 @@ GitHub の公開リポジトリをキーワード検索し、一覧と詳細を�
 
 | 検索と一覧 | リポジトリ詳細 |
 |---|---|
-| ![検索結果一覧](docs/screenshot-search.png) | ![リポジトリ詳細](docs/screenshot-detail.png) |
+| ![検索結果一覧](screenshots/screenshot-search.png) | ![リポジトリ詳細](screenshots/screenshot-detail.png) |
 
 ## 課題要件との対応
 
