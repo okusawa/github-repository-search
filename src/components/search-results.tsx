@@ -6,7 +6,7 @@ import { Pagination } from "@/components/pagination";
 import { RepositoryList } from "@/components/repository-list";
 import { MAX_RESULTS } from "@/lib/constants";
 import { formatNumber } from "@/lib/format";
-import { GitHubApiError } from "@/lib/github/errors";
+import { isGitHubApiError, type GitHubApiError } from "@/lib/github/errors";
 import { searchRepositories } from "@/lib/github/search-repositories";
 import type { SearchRepositoriesResponse } from "@/lib/github/schema";
 import type { ParsedSearchParams } from "@/lib/search-params";
@@ -25,7 +25,7 @@ async function fetchSearchResults(
       searchParams.sort,
     );
   } catch (error) {
-    if (error instanceof GitHubApiError) {
+    if (isGitHubApiError(error)) {
       return error;
     }
 
@@ -36,7 +36,7 @@ async function fetchSearchResults(
 async function SearchResultsContent({ searchParams }: SearchResultsProps) {
   const outcome = await fetchSearchResults(searchParams);
 
-  if (outcome instanceof GitHubApiError) {
+  if (isGitHubApiError(outcome)) {
     return <ErrorMessage error={outcome} />;
   }
 

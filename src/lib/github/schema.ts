@@ -25,3 +25,21 @@ export type SearchRepositoryItem = z.infer<typeof searchRepositoryItemSchema>;
 export type SearchRepositoriesResponse = z.infer<
   typeof searchRepositoriesResponseSchema
 >;
+
+export const repositoryDetailSchema = z.object({
+  full_name: z.string(),
+  name: z.string(),
+  owner: repositoryOwnerSchema,
+  description: z.string().nullable(),
+  html_url: z.url(),
+  language: z.string().nullable(),
+  stargazers_count: z.number(),
+  subscribers_count: z.number(),
+  forks_count: z.number(),
+});
+
+export const searchIssuesResponseSchema = z.object({
+  total_count: z.number(),
+});
+
+export type RepositoryDetail = z.infer<typeof repositoryDetailSchema>;

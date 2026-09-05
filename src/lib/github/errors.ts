@@ -71,3 +71,25 @@ export function throwForGitHubResponse(response: Response): void {
 export function createNetworkError(): GitHubApiError {
   return new GitHubApiError("network", "Could not connect to GitHub.");
 }
+
+export function isGitHubApiError(error: unknown): error is GitHubApiError {
+  if (error instanceof GitHubApiError) {
+    return true;
+  }
+
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    error.name === "GitHubApiError" &&
+    "kind" in error &&
+    typeof error.kind === "string"
+  );
+}
+
+export function isNotFoundError(error: unknown): boolean {
+  return (
+    (isGitHubApiError(error) && error.kind === "not_found") ||
+    (error instanceof Error && error.message === "Resource not found.")
+  );
+}
