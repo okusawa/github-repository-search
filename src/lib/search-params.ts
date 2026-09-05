@@ -58,3 +58,34 @@ export function buildSearchQuery(params: {
 
   return search.toString();
 }
+
+export function buildSearchPath(params: {
+  q: string;
+  page: number;
+  sort: SortOption;
+}): string {
+  return `/?${buildSearchQuery(params)}`;
+}
+
+export function parseReturnPath(raw: string | undefined): string {
+  if (!raw) {
+    return "/";
+  }
+
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    return "/";
+  }
+
+  if (!decoded.startsWith("/") || decoded.startsWith("//")) {
+    return "/";
+  }
+
+  if (decoded !== "/" && !decoded.startsWith("/?")) {
+    return "/";
+  }
+
+  return decoded;
+}

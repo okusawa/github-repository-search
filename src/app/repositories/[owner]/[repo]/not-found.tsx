@@ -1,4 +1,6 @@
-import Link from "next/link";
+import { Suspense } from "react";
+
+import { BackToSearchLink } from "@/components/back-to-search-link";
 
 export default function RepositoryNotFound() {
   return (
@@ -7,12 +9,9 @@ export default function RepositoryNotFound() {
       <p className="text-sm text-zinc-600">
         The repository you are looking for does not exist or is not accessible.
       </p>
-      <Link
-        href="/"
-        className="w-fit text-sm font-medium text-zinc-900 underline hover:no-underline"
-      >
-        Back to search
-      </Link>
+      <Suspense fallback={null}>
+        <BackToSearchLink className="w-fit text-sm font-medium text-zinc-900 underline hover:no-underline" />
+      </Suspense>
     </div>
   );
 }

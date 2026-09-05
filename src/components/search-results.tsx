@@ -8,7 +8,10 @@ import { MAX_RESULTS } from "@/lib/constants";
 import { formatNumber } from "@/lib/format";
 import { isGitHubApiError } from "@/lib/github/errors";
 import { searchRepositories } from "@/lib/github/search-repositories";
-import type { ParsedSearchParams } from "@/lib/search-params";
+import {
+  buildSearchPath,
+  type ParsedSearchParams,
+} from "@/lib/search-params";
 
 type SearchResultsProps = {
   searchParams: ParsedSearchParams;
@@ -42,7 +45,10 @@ async function SearchResultsContent({ searchParams }: SearchResultsProps) {
         ) : null}
       </p>
 
-      <RepositoryList repositories={outcome.items} />
+      <RepositoryList
+        repositories={outcome.items}
+        returnTo={buildSearchPath(searchParams)}
+      />
       <Pagination searchParams={searchParams} totalCount={outcome.total_count} />
     </div>
   );

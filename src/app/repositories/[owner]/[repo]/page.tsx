@@ -1,9 +1,9 @@
 import Image from "next/image";
-import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
+import { BackToSearchLink } from "@/components/back-to-search-link";
 import { FormattedStat, Stat } from "@/components/stat";
 import { ErrorMessage } from "@/components/error-message";
 import { IssueCount } from "@/components/issue-count";
@@ -30,7 +30,7 @@ export async function generateMetadata({
 
   return {
     title: `${outcome.full_name} | GitHub Repository Search`,
-    description: outcome.description ?? undefined,
+    description: outcome.description?.slice(0, 160) ?? undefined,
   };
 }
 
@@ -46,9 +46,9 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
     return (
       <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-10">
         <nav aria-label="Breadcrumb">
-          <Link href="/" className="text-sm text-zinc-600 hover:text-zinc-900">
-            ← Back to search
-          </Link>
+          <Suspense fallback={null}>
+            <BackToSearchLink className="text-sm text-zinc-600 hover:text-zinc-900" />
+          </Suspense>
         </nav>
         <ErrorMessage title="Could not load repository" error={outcome} />
       </div>
@@ -60,9 +60,9 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-4 py-10">
       <nav aria-label="Breadcrumb">
-        <Link href="/" className="text-sm text-zinc-600 hover:text-zinc-900">
-          ← Back to search
-        </Link>
+        <Suspense fallback={null}>
+          <BackToSearchLink className="text-sm text-zinc-600 hover:text-zinc-900" />
+        </Suspense>
       </nav>
 
       <article className="flex flex-col gap-6">
@@ -80,17 +80,11 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
               {repository.full_name}
             </h1>
 
-            {repository.description ? (
-              <p className="mt-2 text-sm text-zinc-600">{repository.description}</p>
-            ) : (
-              <p className="mt-2 text-sm text-zinc-400">No description</p>
-            )}
-
             <a
               href={repository.html_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 inline-block text-sm font-medium text-zinc-900 underline hover:no-underline"
+              className="mt-2 inline-block text-sm font-medium text-zinc-900 underline hover:no-underline"
             >
               View on GitHub
             </a>
@@ -110,6 +104,14 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
             <IssueCount owner={owner} repo={repo} />
           </Suspense>
         </div>
+
+        {repository.description ? (
+          <p className="line-clamp-4 text-sm leading-5 text-zinc-600">
+            {repository.description}
+          </p>
+        ) : (
+          <p className="text-sm text-zinc-400">No description</p>
+        )}
       </article>
     </div>
   );

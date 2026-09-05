@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent } from "react";
+import { type ChangeEvent, type FormEvent } from "react";
 
 import {
   buildSearchQuery,
@@ -14,23 +14,35 @@ type SearchFormProps = {
   defaultSort: SortOption;
 };
 
+function parseSort(value: string): SortOption {
+  return sortOptions.find((option) => option === value) ?? "best-match";
+}
+
 export function SearchForm({ defaultQuery, defaultSort }: SearchFormProps) {
   const router = useRouter();
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const formData = new FormData(event.currentTarget);
+  function navigateToSearch(form: HTMLFormElement, sort: SortOption) {
+    const formData = new FormData(form);
     const query = String(formData.get("q") ?? "").trim();
     if (!query) {
       return;
     }
 
-    const sortCandidate = String(formData.get("sort") ?? "best-match");
-    const sort: SortOption =
-      sortOptions.find((option) => option === sortCandidate) ?? "best-match";
-
     router.push(`/?${buildSearchQuery({ q: query, page: 1, sort })}`);
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    navigateToSearch(
+      form,
+      parseSort(String(new FormData(form).get("sort") ?? "best-match")),
+    );
+  }
+
+  function handleSortChange(event: ChangeEvent<HTMLSelectElement>) {
+    navigateToSearch(event.currentTarget.form!, parseSort(event.target.value));
   }
 
   return (
@@ -62,6 +74,7 @@ export function SearchForm({ defaultQuery, defaultSort }: SearchFormProps) {
           id="search-sort"
           name="sort"
           defaultValue={defaultSort}
+          onChange={handleSortChange}
           className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200"
         >
           {sortOptions.map((option) => (
