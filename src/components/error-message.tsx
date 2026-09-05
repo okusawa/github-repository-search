@@ -1,16 +1,21 @@
 import { RetryButton } from "@/components/retry-button";
 import { formatResetIn } from "@/lib/format";
+import type { GitHubApiErrorData } from "@/lib/github/errors";
 import { GitHubApiError } from "@/lib/github/errors";
 
 type ErrorMessageProps = {
-  error: GitHubApiError;
+  error: GitHubApiError | GitHubApiErrorData;
 };
 
 export function ErrorMessage({ error }: ErrorMessageProps) {
   let message = error.message;
 
   if (error.kind === "rate_limit" && error.resetAt) {
-    message = `Rate limit reached. Please try again ${formatResetIn(error.resetAt)}.`;
+    const resetAt =
+      error.resetAt instanceof Date
+        ? error.resetAt
+        : new Date(error.resetAt as string);
+    message = `Rate limit reached. Please try again ${formatResetIn(resetAt)}.`;
   }
 
   if (error.kind === "invalid_query") {

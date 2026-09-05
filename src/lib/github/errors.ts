@@ -5,6 +5,12 @@ export type GitHubErrorKind =
   | "upstream"
   | "network";
 
+export type GitHubApiErrorData = {
+  kind: GitHubErrorKind;
+  message: string;
+  resetAt?: string;
+};
+
 export class GitHubApiError extends Error {
   readonly kind: GitHubErrorKind;
   readonly resetAt?: Date;
@@ -39,40 +45,57 @@ function isRateLimited(response: Response): boolean {
   return response.headers.get("x-ratelimit-remaining") === "0";
 }
 
-export function throwForGitHubResponse(response: Response): void {
+export function parseGitHubResponseError(response: Response): GitHubApiError | null {
   if (response.ok) {
-    return;
+    return null;
   }
 
   const resetAt = parseResetAt(response);
 
   if (isRateLimited(response)) {
-    throw new GitHubApiError("rate_limit", "Rate limit reached.", resetAt);
+    return new GitHubApiError("rate_limit", "Rate limit reached.", resetAt);
   }
 
   if (response.status === 404) {
-    throw new GitHubApiError("not_found", "Resource not found.");
+    return new GitHubApiError("not_found", "Resource not found.");
   }
 
   if (response.status === 422) {
-    throw new GitHubApiError("invalid_query", "Invalid search query.");
+    return new GitHubApiError("invalid_query", "Invalid search query.");
   }
 
   if (response.status >= 500) {
-    throw new GitHubApiError(
+    return new GitHubApiError(
       "upstream",
       "A problem occurred on GitHub's side.",
     );
   }
 
-  throw new GitHubApiError("upstream", "Request failed.");
+  return new GitHubApiError("upstream", "Request failed.");
+}
+
+export function throwForGitHubResponse(response: Response): void {
+  const error = parseGitHubResponseError(response);
+  if (error) {
+    throw error;
+  }
 }
 
 export function createNetworkError(): GitHubApiError {
   return new GitHubApiError("network", "Could not connect to GitHub.");
 }
 
-export function isGitHubApiError(error: unknown): error is GitHubApiError {
+const githubErrorKinds = new Set<GitHubErrorKind>([
+  "rate_limit",
+  "not_found",
+  "invalid_query",
+  "upstream",
+  "network",
+]);
+
+export function isGitHubApiError(
+  error: unknown,
+): error is GitHubApiError | GitHubApiErrorData {
   if (error instanceof GitHubApiError) {
     return true;
   }
@@ -80,10 +103,11 @@ export function isGitHubApiError(error: unknown): error is GitHubApiError {
   return (
     typeof error === "object" &&
     error !== null &&
-    "name" in error &&
-    error.name === "GitHubApiError" &&
     "kind" in error &&
-    typeof error.kind === "string"
+    typeof error.kind === "string" &&
+    githubErrorKinds.has(error.kind as GitHubErrorKind) &&
+    "message" in error &&
+    typeof error.message === "string"
   );
 }
 
