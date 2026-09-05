@@ -6,8 +6,8 @@ type IssueCountProps = {
   repo: string;
 };
 
-// Issue 数は Search API の別枠（未認証 10 req/min）を使うため最初に枯れやすい。
-// ここが失敗しても詳細ページの他の項目は残したいので、例外は握って null に倒す。
+// Issue 数は Search API を使う。レート制限は詳細 API と別枠（未認証 10 req/min）で、先に上限に達しやすい。
+// 失敗しても詳細の他項目は残したいので、例外は握って null に倒す。
 async function fetchIssueCount(
   owner: string,
   repo: string,

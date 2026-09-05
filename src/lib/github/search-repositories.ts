@@ -35,7 +35,7 @@ export async function searchRepositories(
   );
 
   // 'use cache' の中で throw すると例外がキャッシュ境界でシリアライズされ、
-  // 呼び出し側で種別を判定できずに error boundary へ落ちる。エラーは値として返す。
+  // 呼び出し側で種別を判定できずに `error.tsx` へ落ちる。エラーは値として返す。
   if (isGitHubApiError(response)) {
     return {
       kind: response.kind,

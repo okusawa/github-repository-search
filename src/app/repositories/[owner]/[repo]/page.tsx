@@ -105,6 +105,7 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
           <FormattedStat label="Stars" value={repository.stargazers_count} />
           <FormattedStat label="Watchers" value={repository.subscribers_count} />
           <FormattedStat label="Forks" value={repository.forks_count} />
+          {/* Issue 数は別リクエスト。他の項目をその応答待ちにしない。 */}
           <Suspense fallback={<Stat label="Issues" value="…" />}>
             <IssueCount owner={owner} repo={repo} />
           </Suspense>
