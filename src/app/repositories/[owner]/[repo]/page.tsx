@@ -106,7 +106,7 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
         </div>
 
         {repository.description ? (
-          <p className="line-clamp-4 text-sm leading-5 text-zinc-600">
+          <p className="whitespace-pre-wrap text-sm leading-5 text-zinc-600">
             {repository.description}
           </p>
         ) : (
