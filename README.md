@@ -41,13 +41,22 @@ docker build -t github-repository-search .
 docker run -p 3000:3000 github-repository-search
 ```
 
-トークンを使うときだけ `--env-file .env.local` を付けます。本番想定は `output: 'standalone'` のマルチステージ Dockerfile です。`docker-compose.yml` は置いていません。
+トークンを使うときだけ `--env-file .env.local` を付けます。`docker-compose.yml` は置いていません。
 
 | コマンド | 内容 |
 |----------|------|
 | `npm run lint` / `typecheck` / `test` | ESLint / `tsc` / Vitest |
 | `npm run build` / `start` | 本番ビルドと起動 |
 | `npm run test:e2e` | Playwright 2本。初回は `npx playwright install`。CI には含めない |
+
+## 本番への載せ方
+
+デプロイ先は課題に無いので載せていません。成果物は `output: 'standalone'` の Docker イメージで、ECS などコンテナ環境に渡せる形にしています。
+
+- マルチステージ、non-root ユーザーで `node server.js`
+- 秘密情報はビルドに焼かない（`.dockerignore` で `.env*` を除外）。`GITHUB_TOKEN` は実行時の環境変数
+- デプロイ前の確認は GitHub Actions（lint / typecheck / test / `next build`）。`main` への push と PR の両方で走る
+- 提出は一人なので作業は `main`。チームなら PR を必須にする
 
 ## 技術選定
 
@@ -64,18 +73,16 @@ docker run -p 3000:3000 github-repository-search
 
 ### Watcher 数は `subscribers_count`
 
-GitHub REST API では `watchers` / `watchers_count` / `stargazers_count` はいずれも **Star 数**です。課題が求める Watcher 数は `GET /repos/{owner}/{repo}` の **`subscribers_count`** にしかありません。
+GitHub REST API では `watchers` / `watchers_count` / `stargazers_count` はいずれも **Star 数**です。課題が求める Watcher 数は **`subscribers_count`** で、一覧の `search/repositories` にはありません。詳細は `GET /repos/{owner}/{repo}` を呼び、直リンクでも成立させます。
 
 > In responses from the REST API, `watchers`, `watchers_count`, and `stargazers_count` correspond to the number of users that have starred a repository, whereas `subscribers_count` corresponds to the number of watchers.
 > — https://docs.github.com/en/rest/activity/starring
 
-そのため詳細は一覧のデータを引き回さず、単一リポジトリ API を呼びます。直リンクでも成立します。
-
 ### Issue 数は `search/issues` を Suspense で分離
 
-`open_issues_count` は Pull Request を含みます。Issue 数は `q=repo:{owner}/{repo} type:issue state:open` の `total_count` です。区切りはスペースです（`+` を文字列に書くと `%2B` になり 422 になります）。
+`open_issues_count` は Pull Request を含みます。Issue 数は `search/issues` で `type:issue state:open` を絞った `total_count` です。
 
-取得は `<Suspense>` 内の `IssueCount` に閉じます。失敗しても他の項目は残し、Issue 欄だけ「Could not retrieve」にします。
+Issue 数だけ Search API をもう1本呼びます。レート制限は詳細 API と別枠です（未認証 10 req/min）。他の項目をその応答待ちにしないため `<Suspense>` で流し、失敗は `IssueCount` で握って「Could not retrieve」にします。
 
 ### サーバー境界。Route Handler は作らない
 
@@ -89,7 +96,7 @@ GitHub REST API では `watchers` / `watchers_count` / `stargazers_count` はい
 
 ### 検索状態は URL
 
-`/?q=next.js&page=2&sort=stars`。`useState` には持ちません。既定の `page=1` と `sort=best-match` は URL に載せません。
+検索条件は URL に持ち、`useState` は使いません。既定の `page=1` と `sort=best-match` はクエリに出さないので、1ページ目なら `/?q=next.js` だけになります。
 
 ### エラー分類
 
@@ -101,7 +108,7 @@ GitHub REST API では `watchers` / `watchers_count` / `stargazers_count` はい
 | `upstream` | 5xx とその他 4xx | GitHub 側の問題 |
 | `network` | `fetch` が throw | 接続失敗 |
 
-403 は権限エラーでも返るので、ヘッダを見ます。`'use cache'` 内でクラスを throw すると error boundary に落ちるため、検索・詳細の API エラーは `kind` / `message` / `resetAt` のオブジェクトとして返します。詳細の 404 だけ `notFound()` します。
+403 は権限エラーでも返るので、ヘッダを見ます。`'use cache'` 内でクラスを throw すると `error.tsx` に落ちるため、検索・詳細の API エラーは `kind` / `message` / `resetAt` のオブジェクトとして返します。詳細の 404 だけ `notFound()` します。
 
 ### キャッシュ
 
@@ -116,7 +123,7 @@ GitHub REST API では `watchers` / `watchers_count` / `stargazers_count` はい
 | コンポーネント | Testing Library | 検索フォーム、ページネーション |
 | E2E | Playwright | 検索→詳細、レート制限（2本） |
 
-Server Component は RTL で描画していません。振る舞いは E2E、ロジックは純関数とデータ層で守ります。E2E は `GITHUB_API_BASE` でローカルモックに向けます。CI は lint / typecheck / test / build だけで、E2E は入れません。
+Server Component は Testing Library で描画していません。async のまま描画すると実際の画面とずれやすいので、通しは Playwright、ロジックは Vitest です。E2E は GitHub 本体を叩かず、`GITHUB_API_BASE` でローカルモックに向けます。CI には入れていません。Playwright のブラウザ準備で時間が伸びる一方、2本で得るものが小さいためです。
 
 ## AI の利用方法
 
@@ -125,21 +132,14 @@ Server Component は RTL で描画していません。振る舞いは E2E、ロ
 | 設計判断（人間） | 仕様を先に固め、書いていない判断を実装にさせない |
 | 調査（AI + 人間） | Watcher / Issue 数 / Cache Components。公式ドキュメントで裏取り |
 | 実装（AI） | 確定した仕様に沿ったコード生成 |
-| レビュー（別セッション） | 実装と同じ文脈での自己肯定を避ける |
+| レビュー | 実装に使った AI とは別のモデルで読み、指摘を直した |
 | 最終確認（人間） | コードと README の一致 |
 
 伝えたいのは、使ったかどうかではなく、何を任せ何を任せなかったかです。
 
 ## スコープ外・制約・仮定
 
-**やらなかったこと** — 認証、監視基盤、自動リトライ、分散キャッシュ、i18n、無限スクロール、E2E の網羅、compose、自前 API、デプロイ。課題の必須と「入れないと本番で落ちるもの」までに切っています。
-
-| 制約 | 内容 |
-|------|------|
-| 検索の上限 | Search API は先頭 1,000 件。最大 50 ページ |
-| キャッシュ | `'use cache'` はプロセス内。複数インスタンスでは共有されない |
-| リトライ | しない。復帰時刻を出して再試行に委ねる |
-| Issue 数 | Search API の別枠なので、ここだけ先に枯れることがある |
+レート制限、トークン、エラー分類、CI、イメージは入れました。本格的な本番運用なら認証、監視、キャッシュ、国際化等の整備が必要ですが、今回は課題の範囲外と判断しました。Search API は先頭 1,000 件までしか返さないため、ページは最大 50 です。
 
 | 仮定 | 解釈 |
 |------|------|
