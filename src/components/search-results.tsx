@@ -22,7 +22,7 @@ async function SearchResultsContent({ searchParams }: SearchResultsProps) {
   );
 
   if (isGitHubApiError(outcome)) {
-    return <ErrorMessage error={outcome} />;
+    return <ErrorMessage title="Search failed" error={outcome} />;
   }
 
   if (outcome.total_count === 0) {

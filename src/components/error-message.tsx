@@ -4,18 +4,17 @@ import type { GitHubApiErrorData } from "@/lib/github/errors";
 import { GitHubApiError } from "@/lib/github/errors";
 
 type ErrorMessageProps = {
+  title: string;
   error: GitHubApiError | GitHubApiErrorData;
 };
 
-export function ErrorMessage({ error }: ErrorMessageProps) {
+export function ErrorMessage({ title, error }: ErrorMessageProps) {
   let message = error.message;
+  const { resetAt } = error;
 
-  if (error.kind === "rate_limit" && error.resetAt) {
-    const resetAt =
-      error.resetAt instanceof Date
-        ? error.resetAt
-        : new Date(error.resetAt as string);
-    message = `Rate limit reached. Please try again ${formatResetIn(resetAt)}.`;
+  if (error.kind === "rate_limit" && resetAt) {
+    const resetDate = typeof resetAt === "string" ? new Date(resetAt) : resetAt;
+    message = `Rate limit reached. Please try again ${formatResetIn(resetDate)}.`;
   }
 
   if (error.kind === "invalid_query") {
@@ -33,10 +32,9 @@ export function ErrorMessage({ error }: ErrorMessageProps) {
   return (
     <section
       role="alert"
-      aria-live="polite"
       className="rounded-lg border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-900"
     >
-      <h2 className="font-semibold">Search failed</h2>
+      <h2 className="font-semibold">{title}</h2>
       <p className="mt-1">{message}</p>
       <RetryButton />
     </section>

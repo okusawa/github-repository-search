@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { formatNumber } from "@/lib/format";
+import { formatDate, formatNumber } from "@/lib/format";
 import type { SearchRepositoryItem } from "@/lib/github/schema";
 
 type RepositoryCardProps = {
@@ -11,11 +11,7 @@ type RepositoryCardProps = {
 export function RepositoryCard({ repository }: RepositoryCardProps) {
   const owner = repository.owner.login;
   const repo = repository.full_name.slice(owner.length + 1);
-  const updatedAt = new Date(repository.updated_at).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  const updatedAt = formatDate(repository.updated_at);
 
   return (
     <article className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">

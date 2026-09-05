@@ -20,7 +20,7 @@ describe("SearchForm", () => {
     await user.type(screen.getByLabelText("Search query"), "next.js");
     await user.click(screen.getByRole("button", { name: "Search" }));
 
-    expect(push).toHaveBeenCalledWith("/?q=next.js&page=1&sort=best-match");
+    expect(push).toHaveBeenCalledWith("/?q=next.js");
   });
 
   it("does not navigate when query is empty or whitespace only", async () => {

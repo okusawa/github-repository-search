@@ -7,6 +7,8 @@ export type SortOption = (typeof sortOptions)[number];
 
 const searchParamsSchema = z.object({
   q: z.string().trim().max(256).catch(""),
+  // .catch() を .transform() より前に置く。逆にすると上限を超えたページ番号が
+  // 丸められずに既定値の 1 へ落ちる。
   page: z.coerce
     .number()
     .int()

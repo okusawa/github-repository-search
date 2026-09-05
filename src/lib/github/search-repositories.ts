@@ -24,6 +24,7 @@ export async function searchRepositories(
     per_page: String(PER_PAGE),
   });
 
+  // best-match は GitHub 側の既定。sort と order を送ると明示指定になるため送らない。
   if (sort !== "best-match") {
     params.set("sort", sort);
     params.set("order", "desc");
@@ -33,6 +34,8 @@ export async function searchRepositories(
     `/search/repositories?${params.toString()}`,
   );
 
+  // 'use cache' の中で throw すると例外がキャッシュ境界でシリアライズされ、
+  // 呼び出し側で種別を判定できずに error boundary へ落ちる。エラーは値として返す。
   if (isGitHubApiError(response)) {
     return {
       kind: response.kind,

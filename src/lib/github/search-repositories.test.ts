@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 import { ZodError } from "zod";
 
+import { isGitHubApiError } from "@/lib/github/errors";
 import { searchRepositories } from "@/lib/github/search-repositories";
 import { server } from "@/test/msw/server";
 
@@ -12,6 +13,10 @@ vi.mock("next/cache", () => ({
 describe("searchRepositories", () => {
   it("parses a successful response and returns required fields", async () => {
     const result = await searchRepositories("hello", 1, "best-match");
+
+    if (isGitHubApiError(result)) {
+      throw new Error(`expected a successful response, got ${result.kind}`);
+    }
 
     expect(result.total_count).toBe(1);
     expect(result.items[0]).toMatchObject({

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent } from "react";
 
 import {
+  buildSearchQuery,
   sortOptions,
   type SortOption,
 } from "@/lib/search-params";
@@ -25,14 +26,11 @@ export function SearchForm({ defaultQuery, defaultSort }: SearchFormProps) {
       return;
     }
 
-    const sort = String(formData.get("sort") ?? "best-match");
-    const params = new URLSearchParams({
-      q: query,
-      page: "1",
-      sort,
-    });
+    const sortCandidate = String(formData.get("sort") ?? "best-match");
+    const sort: SortOption =
+      sortOptions.find((option) => option === sortCandidate) ?? "best-match";
 
-    router.push(`/?${params.toString()}`);
+    router.push(`/?${buildSearchQuery({ q: query, page: 1, sort })}`);
   }
 
   return (

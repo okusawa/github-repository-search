@@ -38,6 +38,8 @@ function parseResetAt(response: Response): Date | undefined {
 }
 
 function isRateLimited(response: Response): boolean {
+  // 403 は権限エラーでも返るため status だけでは判定できない。
+  // レート制限は x-ratelimit-remaining が 0 であることで区別する。
   if (response.status !== 403 && response.status !== 429) {
     return false;
   }
@@ -74,18 +76,11 @@ export function parseGitHubResponseError(response: Response): GitHubApiError | n
   return new GitHubApiError("upstream", "Request failed.");
 }
 
-export function throwForGitHubResponse(response: Response): void {
-  const error = parseGitHubResponseError(response);
-  if (error) {
-    throw error;
-  }
-}
-
 export function createNetworkError(): GitHubApiError {
   return new GitHubApiError("network", "Could not connect to GitHub.");
 }
 
-const githubErrorKinds = new Set<GitHubErrorKind>([
+const githubErrorKinds: ReadonlySet<string> = new Set<GitHubErrorKind>([
   "rate_limit",
   "not_found",
   "invalid_query",
@@ -93,6 +88,13 @@ const githubErrorKinds = new Set<GitHubErrorKind>([
   "network",
 ]);
 
+function isGitHubErrorKind(kind: string): kind is GitHubErrorKind {
+  return githubErrorKinds.has(kind);
+}
+
+// 'use cache' は戻り値と例外をシリアライズするため、キャッシュ境界を越えると
+// GitHubApiError の prototype が失われて instanceof が false になる。
+// そのため形状（kind と message）で判定する。
 export function isGitHubApiError(
   error: unknown,
 ): error is GitHubApiError | GitHubApiErrorData {
@@ -105,7 +107,7 @@ export function isGitHubApiError(
     error !== null &&
     "kind" in error &&
     typeof error.kind === "string" &&
-    githubErrorKinds.has(error.kind as GitHubErrorKind) &&
+    isGitHubErrorKind(error.kind) &&
     "message" in error &&
     typeof error.message === "string"
   );

@@ -28,4 +28,19 @@ describe("Pagination", () => {
     expect(screen.getByRole("link", { name: "Previous" })).toBeInTheDocument();
     expect(screen.getByText("Next")).toHaveAttribute("aria-disabled", "true");
   });
+
+  it("shows page numbers with ellipsis and marks the current page", () => {
+    render(
+      <Pagination
+        searchParams={{ q: "next.js", page: 5, sort: "best-match" }}
+        totalCount={PER_PAGE * 50}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "1" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "50" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "5" })).not.toBeInTheDocument();
+    expect(screen.getByText("5")).toHaveAttribute("aria-current", "page");
+    expect(screen.getAllByText("…").length).toBeGreaterThan(0);
+  });
 });

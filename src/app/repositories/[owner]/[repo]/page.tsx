@@ -50,7 +50,7 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
             ← Back to search
           </Link>
         </nav>
-        <ErrorMessage error={outcome} />
+        <ErrorMessage title="Could not load repository" error={outcome} />
       </div>
     );
   }
